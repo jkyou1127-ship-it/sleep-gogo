@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>슬립 퀘스트 - 관리자</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="topbar">
+      <span id="greeting" class="muted"></span>
+      <span>
+        <a href="./index.html" class="btn-link">내 화면</a>
+        <button type="button" id="logout-btn" class="btn-link">로그아웃</button>
+      </span>
+    </div>
+
+    <section class="card">
+      <h2>관리자 요약</h2>
+      <div class="stat-chips">
+        <span class="chip">👥 회원 <span id="admin-user-count">0</span>명</span>
+        <span class="chip">🎟 미정산 <span id="admin-pending-won">0원</span></span>
+        <span class="chip">✅ 정산완료 <span id="admin-settled-won">0원</span></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>쿠폰 사용 처리</h2>
+      <p class="subtitle">회원이 보여준 코드를 입력하면 사용 처리돼요.</p>
+      <form id="redeem-form" class="auth-form">
+        <label class="field">
+          <span>쿠폰 코드</span>
+          <input type="text" name="code" placeholder="XXXX-XXXX" autocomplete="off" required />
+        </label>
+        <button type="submit" class="btn-primary">사용 처리</button>
+      </form>
+      <p id="redeem-result" class="checkin-result"></p>
+    </section>
+
+    <section class="card">
+      <h2>전체 쿠폰</h2>
+      <div id="coupons-body"></div>
+    </section>
+
+    <section class="card">
+      <h2>회원 관리</h2>
+      <p class="subtitle">지급/차감은 레벨·전환 가능 포인트에 즉시 반영돼요. 초기화는 기록과 조정값만 지워요 (로그인 계정 자체는 남아요).</p>
+      <div id="users-body"></div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./js/admin.js"></script>
+</body>
+</html>

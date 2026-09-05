@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Copy this into Firebase Console → Firestore Database → Rules → Publish.
+// This is the ONLY real access control for the app — the client code
+// trusts these rules, not the other way around.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'sycovy0706@naver.com';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /records/{date} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    match /coupons/{code} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

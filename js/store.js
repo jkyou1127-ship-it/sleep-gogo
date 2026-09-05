@@ -1,87 +1,89 @@
-// localStorage-backed data layer. GitHub Pages only serves static files, so
-// there is no real server — every "account" lives in the visiting browser.
-// This gates the app behind a login screen and keeps each nickname's data
-// separate, but it is not real multi-device authentication or security.
+// Firestore-backed data layer. Real backend now (Firebase Auth + Firestore),
+// so data is shared across devices/browsers. Access control is enforced by
+// firestore.rules, not by this file — treat that file as the source of
+// truth for who can actually do what.
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  serverTimestamp,
+} from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { db } from './firebase.js';
 
-const USERS_KEY = 'sq_users';
-const SESSION_KEY = 'sq_session';
-
-function readJSON(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
+export async function createUserProfile(uid, { email, nickname }) {
+  const ref = doc(db, 'users', uid);
+  const profile = {
+    email: email.trim().toLowerCase(),
+    nickname,
+    convertedPoints: 0,
+    adminAdjustment: 0,
+    createdAt: serverTimestamp(),
+  };
+  await setDoc(ref, profile);
+  return { uid, ...profile };
 }
 
-function writeJSON(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+export async function getUserProfile(uid) {
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() ? { uid, ...snap.data() } : null;
 }
 
-function getUsers() {
-  return readJSON(USERS_KEY, {});
+export async function updateUserProfile(uid, patch) {
+  await updateDoc(doc(db, 'users', uid), patch);
 }
 
-function saveUsers(users) {
-  writeJSON(USERS_KEY, users);
+export async function deleteUserProfile(uid) {
+  const recordsSnap = await getDocs(collection(db, 'users', uid, 'records'));
+  await Promise.all(recordsSnap.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, 'users', uid));
 }
 
-export function findUser(email) {
-  const key = email.trim().toLowerCase();
-  return getUsers()[key] || null;
+export async function getAllUserProfiles() {
+  const snap = await getDocs(collection(db, 'users'));
+  return snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
 }
 
-export function createUser({ email, nickname, salt, hash }) {
-  const key = email.trim().toLowerCase();
-  const users = getUsers();
-  const user = { email: key, nickname, salt, hash, convertedPoints: 0, cashWon: 0, createdAt: new Date().toISOString() };
-  users[key] = user;
-  saveUsers(users);
-  return user;
+export async function getRecords(uid) {
+  const snap = await getDocs(collection(db, 'users', uid, 'records'));
+  const records = snap.docs.map((d) => d.data());
+  records.sort((a, b) => a.date.localeCompare(b.date));
+  return records;
 }
 
-export function updateUser(email, patch) {
-  const key = email.trim().toLowerCase();
-  const users = getUsers();
-  if (!users[key]) return null;
-  Object.assign(users[key], patch);
-  saveUsers(users);
-  return users[key];
+export async function upsertRecord(uid, record) {
+  await setDoc(doc(db, 'users', uid, 'records', record.date), record);
 }
 
-export function getSessionEmail() {
-  return localStorage.getItem(SESSION_KEY);
+export async function addCoupon(coupon) {
+  await setDoc(doc(db, 'coupons', coupon.code), coupon);
 }
 
-export function setSessionEmail(email) {
-  localStorage.setItem(SESSION_KEY, email.trim().toLowerCase());
+export async function getUserCoupons(uid) {
+  const q = query(collection(db, 'coupons'), where('uid', '==', uid));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data()).sort((a, b) => b.issuedAt - a.issuedAt);
 }
 
-export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+export async function getAllCoupons() {
+  const snap = await getDocs(collection(db, 'coupons'));
+  return snap.docs.map((d) => d.data()).sort((a, b) => b.issuedAt - a.issuedAt);
 }
 
-export function getCurrentUser() {
-  const email = getSessionEmail();
-  if (!email) return null;
-  return findUser(email);
+export async function findCouponByCode(code) {
+  const snap = await getDoc(doc(db, 'coupons', code));
+  return snap.exists() ? snap.data() : null;
 }
 
-function recordsKey(email) {
-  return `sq_records_${email.trim().toLowerCase()}`;
-}
-
-export function getRecords(email) {
-  return readJSON(recordsKey(email), []);
-}
-
-export function upsertRecord(email, record) {
-  const list = getRecords(email);
-  const idx = list.findIndex((r) => r.date === record.date);
-  if (idx >= 0) list[idx] = record;
-  else list.push(record);
-  list.sort((a, b) => a.date.localeCompare(b.date));
-  writeJSON(recordsKey(email), list);
-  return list;
+export async function markCouponUsed(code, usedByEmail) {
+  await updateDoc(doc(db, 'coupons', code), {
+    status: 'used',
+    usedAt: Date.now(),
+    usedBy: usedByEmail,
+  });
 }

@@ -1,5 +1,12 @@
-import { EMAIL_RE, hashPassword, verifyPassword } from './auth.js';
-import { findUser, createUser, setSessionEmail } from './store.js';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+import { auth } from './firebase.js';
+import { createUserProfile } from './store.js';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const tabs = document.querySelectorAll('.tab');
 const loginForm = document.getElementById('login-form');
@@ -15,6 +22,34 @@ function clearError() {
   errorEl.hidden = true;
   errorEl.textContent = '';
 }
+
+function setBusy(form, busy) {
+  form.querySelectorAll('button, input').forEach((el) => (el.disabled = busy));
+}
+
+function friendlyError(err) {
+  switch (err.code) {
+    case 'auth/email-already-in-use':
+      return '이미 가입된 이메일이에요.';
+    case 'auth/invalid-email':
+      return '올바른 이메일 형식이 아니에요.';
+    case 'auth/weak-password':
+      return '비밀번호는 6자 이상이어야 해요.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return '이메일 또는 비밀번호가 올바르지 않아요.';
+    case 'auth/network-request-failed':
+      return '네트워크 연결을 확인해주세요.';
+    default:
+      return '문제가 발생했어요. 잠시 후 다시 시도해주세요.';
+  }
+}
+
+// Already signed in? skip the login screen.
+onAuthStateChanged(auth, (user) => {
+  if (user) window.location.href = './index.html';
+});
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
@@ -35,13 +70,15 @@ loginForm.addEventListener('submit', async (e) => {
   const email = loginForm.email.value.trim();
   const password = loginForm.password.value;
 
-  const user = findUser(email);
-  if (!user || !(await verifyPassword(password, user.salt, user.hash))) {
-    showError('이메일 또는 비밀번호가 올바르지 않아요.');
-    return;
+  setBusy(loginForm, true);
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    window.location.href = './index.html';
+  } catch (err) {
+    showError(friendlyError(err));
+  } finally {
+    setBusy(loginForm, false);
   }
-  setSessionEmail(user.email);
-  window.location.href = './index.html';
 });
 
 signupForm.addEventListener('submit', async (e) => {
@@ -52,12 +89,17 @@ signupForm.addEventListener('submit', async (e) => {
   const nickname = signupForm.nickname.value.trim() || '슬립 루키';
 
   if (!EMAIL_RE.test(email)) return showError('올바른 이메일 형식이 아니에요.');
-  if (password.length < 8) return showError('비밀번호는 8자 이상이어야 해요.');
+  if (password.length < 6) return showError('비밀번호는 6자 이상이어야 해요.');
   if (nickname.length > 20) return showError('닉네임은 20자 이하로 입력해주세요.');
-  if (findUser(email)) return showError('이미 가입된 이메일이에요.');
 
-  const { salt, hash } = await hashPassword(password);
-  const user = createUser({ email, nickname, salt, hash });
-  setSessionEmail(user.email);
-  window.location.href = './index.html';
+  setBusy(signupForm, true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await createUserProfile(cred.user.uid, { email, nickname });
+    window.location.href = './index.html';
+  } catch (err) {
+    showError(friendlyError(err));
+  } finally {
+    setBusy(signupForm, false);
+  }
 });

@@ -10,7 +10,10 @@
   <div class="app-wrap">
     <div class="topbar">
       <span id="greeting" class="muted"></span>
-      <button type="button" id="logout-btn" class="btn-link">로그아웃</button>
+      <span>
+        <a href="./admin.html" id="admin-link" class="btn-link" hidden>관리자 페이지</a>
+        <button type="button" id="logout-btn" class="btn-link">로그아웃</button>
+      </span>
     </div>
 
     <!-- 요약 카드 -->
@@ -30,10 +33,10 @@
 
       <div class="wallet-row">
         <div class="wallet-info">
-          누적 적립금 <strong id="cash-won">0원</strong><br />
+          <span id="coupon-summary">미사용 쿠폰 <strong>0원</strong><br /><span class="muted">정산 완료 0원</span></span><br />
           <span id="convert-hint" class="muted">300P를 모으면 전환할 수 있어요.</span>
         </div>
-        <button type="button" id="convert-btn" class="btn-convert">전환하기</button>
+        <button type="button" id="convert-btn" class="btn-convert">쿠폰 발행</button>
       </div>
 
       <div class="stat-chips">
@@ -121,10 +124,17 @@
       <div id="records-body"></div>
     </section>
 
+    <!-- 내 쿠폰 -->
+    <section class="card">
+      <h2>내 쿠폰</h2>
+      <p class="subtitle">발행한 코드를 관리자에게 보여주면 정산돼요.</p>
+      <div id="coupons-body"></div>
+    </section>
+
     <!-- 포인트 규칙 -->
     <section class="card">
       <h2>포인트 규칙</h2>
-      <p class="subtitle">300P = 1,000원 적립 · 전환하면 적립금으로 넘어감</p>
+      <p class="subtitle">300P = 1,000원 쿠폰 발행 · 관리자가 사용 처리하면 정산 완료</p>
       <div class="rule-list">
         <div class="rule-row"><span class="rule-dot" style="background:#9aa1ad"></span><span class="rule-label">기록 완료 (무조건)</span><span class="rule-value">+10</span></div>
         <div class="rule-row"><span class="rule-dot" style="background:#2f6feb"></span><span class="rule-label">잔 시각 22:30 / 23:00 / 24:00 / 01:00 전</span><span class="rule-value">+40·30·20·10</span></div>
