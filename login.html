@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>슬립 퀘스트 - 로그인</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="auth-logo">🌙</span>
+        <h1>슬립 퀘스트</h1>
+        <p class="muted">기록하면 포인트, 포인트는 적립금으로.</p>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="login" role="tab" aria-selected="true">로그인</button>
+        <button type="button" class="tab" data-tab="signup" role="tab" aria-selected="false">회원가입</button>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <label class="field">
+          <span>이메일</span>
+          <input type="email" name="email" required autocomplete="email" placeholder="you@example.com" />
+        </label>
+        <label class="field">
+          <span>비밀번호</span>
+          <input type="password" name="password" required autocomplete="current-password" placeholder="비밀번호" />
+        </label>
+        <button type="submit" class="btn-primary">로그인</button>
+      </form>
+
+      <form id="signup-form" class="auth-form" hidden>
+        <label class="field">
+          <span>닉네임</span>
+          <input type="text" name="nickname" maxlength="20" autocomplete="nickname" placeholder="슬립 루키" />
+        </label>
+        <label class="field">
+          <span>이메일</span>
+          <input type="email" name="email" required autocomplete="email" placeholder="you@example.com" />
+        </label>
+        <label class="field">
+          <span>비밀번호</span>
+          <input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="8자 이상" />
+        </label>
+        <button type="submit" class="btn-primary">회원가입</button>
+      </form>
+
+      <p id="auth-error" class="auth-error" hidden></p>
+    </div>
+  </main>
+  <script type="module" src="./js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>슬립 퀘스트</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="topbar">
+      <span id="greeting" class="muted"></span>
+      <button type="button" id="logout-btn" class="btn-link">로그아웃</button>
+    </div>
+
+    <!-- 요약 카드 -->
+    <section class="card">
+      <div class="header-row">
+        <h1>슬립 퀘스트</h1>
+        <span id="header-date" class="header-date"></span>
+      </div>
+
+      <div class="points-row">
+        <span class="point-icon">P</span>
+        <div>
+          <div class="points-main"><span id="total-points">0</span>P</div>
+          <div class="points-sub" id="points-sub">= 0원 적립</div>
+        </div>
+      </div>
+
+      <div class="wallet-row">
+        <div class="wallet-info">
+          누적 적립금 <strong id="cash-won">0원</strong><br />
+          <span id="convert-hint" class="muted">300P를 모으면 전환할 수 있어요.</span>
+        </div>
+        <button type="button" id="convert-btn" class="btn-convert">전환하기</button>
+      </div>
+
+      <div class="stat-chips">
+        <span class="chip">🔥 연속 <span id="stat-streak">0</span>일</span>
+        <span class="chip">🗓 기록 <span id="stat-records">0</span>일</span>
+        <span class="chip">🏅 배지 <span id="stat-badges">0</span>/9</span>
+      </div>
+
+      <div class="level-row">
+        <span class="level-title">LV.<span id="level-num">1</span> <span id="level-title"></span></span>
+        <span class="muted">다음까지 <span id="level-need">300</span>P</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="level-fill" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- 오늘의 체크인 -->
+    <section class="card">
+      <h2>오늘의 체크인</h2>
+      <p class="subtitle">30초면 끝. 늦게 잤어도 기록만 하면 점수를 받는다.</p>
+
+      <form id="checkin-form">
+        <div class="field-label">어젯밤 화면(폰·PC) 끈 시각</div>
+        <div class="time-input-wrap">
+          <input type="time" class="time-input" name="screenOffTime" required value="22:30" />
+        </div>
+
+        <div class="field-label">어젯밤 잔 시각</div>
+        <div class="time-input-wrap">
+          <input type="time" class="time-input" name="sleepTime" required value="23:00" />
+        </div>
+
+        <div class="field-label">오늘 일어난 시각</div>
+        <div class="time-input-wrap">
+          <input type="time" class="time-input" name="wakeTime" required value="07:30" />
+        </div>
+
+        <div class="field-label">오늘 컨디션</div>
+        <div class="btn-group cols-5" id="condition-group" data-name="condition">
+          <button type="button" class="opt-btn" data-value="1"><span class="emoji">🥵</span>1</button>
+          <button type="button" class="opt-btn" data-value="2"><span class="emoji">😪</span>2</button>
+          <button type="button" class="opt-btn selected" data-value="3"><span class="emoji">😐</span>3</button>
+          <button type="button" class="opt-btn" data-value="4"><span class="emoji">🙂</span>4</button>
+          <button type="button" class="opt-btn" data-value="5"><span class="emoji">😄</span>5</button>
+        </div>
+
+        <div class="field-label">방 온도</div>
+        <div class="btn-group cols-3" id="temp-group" data-name="roomTemp">
+          <button type="button" class="opt-btn" data-value="시원">시원</button>
+          <button type="button" class="opt-btn selected" data-value="적당">적당</button>
+          <button type="button" class="opt-btn" data-value="더움">더움</button>
+        </div>
+
+        <div class="field-label">잘 때 방 밝기</div>
+        <div class="btn-group cols-3" id="light-group" data-name="roomLight">
+          <button type="button" class="opt-btn" data-value="깜깜">깜깜</button>
+          <button type="button" class="opt-btn selected" data-value="어둠">어둠</button>
+          <button type="button" class="opt-btn" data-value="밝음">밝음</button>
+        </div>
+
+        <button type="submit" class="btn-primary checkin-submit" id="checkin-submit">오늘 기록 저장하기</button>
+        <p id="checkin-result" class="checkin-result"></p>
+      </form>
+    </section>
+
+    <!-- 배지 큐브 -->
+    <section class="card">
+      <h2>배지 큐브</h2>
+      <p class="subtitle">9칸을 다 채우면 한 면 완성.</p>
+      <div class="badge-grid" id="badge-grid"></div>
+    </section>
+
+    <!-- 데이터 분석 -->
+    <section class="card">
+      <h2>데이터 분석</h2>
+      <p class="subtitle">잔 시각별 다음날 컨디션 평균. 3일 이상 기록하면 나온다.</p>
+      <div id="analysis-body"></div>
+    </section>
+
+    <!-- 기록 -->
+    <section class="card">
+      <h2>기록</h2>
+      <p class="subtitle">최근 14일</p>
+      <div id="records-body"></div>
+    </section>
+
+    <!-- 포인트 규칙 -->
+    <section class="card">
+      <h2>포인트 규칙</h2>
+      <p class="subtitle">300P = 1,000원 적립 · 전환하면 적립금으로 넘어감</p>
+      <div class="rule-list">
+        <div class="rule-row"><span class="rule-dot" style="background:#9aa1ad"></span><span class="rule-label">기록 완료 (무조건)</span><span class="rule-value">+10</span></div>
+        <div class="rule-row"><span class="rule-dot" style="background:#2f6feb"></span><span class="rule-label">잔 시각 22:30 / 23:00 / 24:00 / 01:00 전</span><span class="rule-value">+40·30·20·10</span></div>
+        <div class="rule-row"><span class="rule-dot" style="background:#e0473b"></span><span class="rule-label">자기 30분 전에 화면 끄기</span><span class="rule-value">+15</span></div>
+        <div class="rule-row"><span class="rule-dot" style="background:#1f9d55"></span><span class="rule-label">8시간 이상 수면 (7시간 +10)</span><span class="rule-value">+15</span></div>
+        <div class="rule-row"><span class="rule-dot" style="background:#f2a72e"></span><span class="rule-label">연속 기록 3일 / 7일 / 14일</span><span class="rule-value">+20·50·100</span></div>
+        <div class="rule-row"><span class="rule-dot" style="background:#d4af37"></span><span class="rule-label">7일 연속 완주 보너스</span><span class="rule-value">+50</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
