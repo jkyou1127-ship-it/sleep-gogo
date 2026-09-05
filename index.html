@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>슬립 퀘스트</title>
-  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./css/style.css?v=3" />
 </head>
 <body>
   <div class="app-wrap">
@@ -32,11 +32,15 @@
       </div>
 
       <div class="wallet-row">
-        <div class="wallet-info">
-          <span id="coupon-summary">미사용 쿠폰 <strong>0원</strong><br /><span class="muted">정산 완료 0원</span></span><br />
-          <span id="convert-hint" class="muted">300P를 모으면 전환할 수 있어요.</span>
-        </div>
-        <button type="button" id="convert-btn" class="btn-convert">쿠폰 발행</button>
+        <div id="coupon-summary" class="wallet-info">미사용 쿠폰 <strong>0원</strong><br /><span class="muted">정산 완료 0원</span></div>
+        <form id="convert-form" class="convert-form">
+          <label class="convert-amount-label">
+            <span class="muted">발행할 포인트</span>
+            <input type="number" id="convert-amount" min="300" step="300" value="300" />
+          </label>
+          <button type="submit" id="convert-btn" class="btn-convert">쿠폰 발행</button>
+        </form>
+        <p id="convert-hint" class="muted convert-hint">300P를 모으면 전환할 수 있어요.</p>
       </div>
 
       <div class="stat-chips">
@@ -148,6 +152,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=3"></script>
 </body>
 </html>

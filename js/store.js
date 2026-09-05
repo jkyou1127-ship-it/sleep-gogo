@@ -15,7 +15,7 @@ import {
   serverTimestamp,
   increment,
 } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
-import { db } from './firebase.js';
+import { db } from './firebase.js?v=3';
 
 export async function createUserProfile(uid, { email, nickname }) {
   const ref = doc(db, 'users', uid);

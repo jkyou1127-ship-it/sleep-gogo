@@ -1,6 +1,6 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
-import { auth, ADMIN_EMAIL } from './firebase.js';
-import { computeTotalPoints } from './points.js';
+import { auth, ADMIN_EMAIL } from './firebase.js?v=3';
+import { computeTotalPoints } from './points.js?v=3';
 import {
   getUserProfile,
   getAllUserProfiles,
@@ -10,7 +10,7 @@ import {
   getAllCoupons,
   findCouponByCode,
   markCouponUsed,
-} from './store.js';
+} from './store.js?v=3';
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {

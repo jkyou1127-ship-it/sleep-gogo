@@ -3,8 +3,8 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
-import { auth } from './firebase.js';
-import { createUserProfile } from './store.js';
+import { auth } from './firebase.js?v=3';
+import { createUserProfile } from './store.js?v=3';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

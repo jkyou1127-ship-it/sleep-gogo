@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
-import { auth, ADMIN_EMAIL } from './firebase.js';
+import { auth, ADMIN_EMAIL } from './firebase.js?v=3';
 import {
   today,
   formatDate,
@@ -12,7 +12,8 @@ import {
   convertibleSummary,
   sleepDurationMinutes,
   POINTS_PER_UNIT,
-} from './points.js';
+  WON_PER_UNIT,
+} from './points.js?v=3';
 import {
   getUserProfile,
   createUserProfile,
@@ -21,8 +22,8 @@ import {
   upsertRecord,
   getUserCoupons,
   addCoupon,
-} from './store.js';
-import { randomCouponCode } from './coupon.js';
+} from './store.js?v=3';
+import { randomCouponCode } from './coupon.js?v=3';
 
 const CONDITION_EMOJI = { 1: '🥵', 2: '😪', 3: '😐', 4: '🙂', 5: '😄' };
 
@@ -55,6 +56,8 @@ async function main(authUser) {
     pointsSub: document.getElementById('points-sub'),
     couponSummary: document.getElementById('coupon-summary'),
     convertHint: document.getElementById('convert-hint'),
+    convertForm: document.getElementById('convert-form'),
+    convertAmount: document.getElementById('convert-amount'),
     convertBtn: document.getElementById('convert-btn'),
     statStreak: document.getElementById('stat-streak'),
     statRecords: document.getElementById('stat-records'),
@@ -167,11 +170,26 @@ async function main(authUser) {
     els.totalPoints.textContent = totalPoints.toLocaleString('ko-KR');
     els.pointsSub.textContent = `전환 가능 ${wallet.availablePoints.toLocaleString('ko-KR')}P`;
     els.couponSummary.innerHTML = `미사용 쿠폰 <strong>${won(pendingWon)}</strong><br /><span class="muted">정산 완료 ${won(settledWon)}</span>`;
+
+    const maxConvertible = wallet.pointsUsedIfConverted; // largest multiple of 300P available
+    els.convertAmount.min = POINTS_PER_UNIT;
+    els.convertAmount.step = POINTS_PER_UNIT;
+    els.convertAmount.max = maxConvertible;
+    els.convertAmount.disabled = maxConvertible <= 0;
+    els.convertBtn.disabled = maxConvertible <= 0;
+    // Keep the box showing a sensible amount: clamp down to the new max,
+    // but only push it up to the max the first time (once it's within
+    // range, leave whatever the person is currently choosing alone).
+    const currentAmount = Number(els.convertAmount.value) || 0;
+    if (maxConvertible <= 0) {
+      els.convertAmount.value = '';
+    } else if (currentAmount > maxConvertible || currentAmount <= 0) {
+      els.convertAmount.value = maxConvertible;
+    }
     els.convertHint.textContent =
-      wallet.convertibleWon > 0
-        ? `지금 ${won(wallet.convertibleWon)} 쿠폰 발행 가능!`
+      maxConvertible > 0
+        ? `최대 ${maxConvertible.toLocaleString('ko-KR')}P까지 쿠폰으로 발행할 수 있어요.`
         : `${POINTS_PER_UNIT}P를 모으면 전환할 수 있어요. (${wallet.pointsUntilNextUnit}P 남음)`;
-    els.convertBtn.disabled = wallet.convertibleWon <= 0;
 
     els.statStreak.textContent = streak;
     els.statRecords.textContent = records.length;
@@ -311,15 +329,23 @@ async function main(authUser) {
     await render();
   });
 
-  els.convertBtn.addEventListener('click', async () => {
+  els.convertForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
     els.convertBtn.disabled = true;
+
     const records = await getRecords(authUser.uid);
     const totalPoints = computeTotalPoints(records) + (profile.adminAdjustment || 0);
     const summary = convertibleSummary(totalPoints, profile.convertedPoints || 0);
-    if (summary.convertibleWon <= 0) {
+
+    const requested = Math.floor(Number(els.convertAmount.value) || 0);
+    const valid = requested > 0 && requested % POINTS_PER_UNIT === 0 && requested <= summary.pointsUsedIfConverted;
+    if (!valid) {
+      showToast(`300P 단위로, 최대 ${summary.pointsUsedIfConverted.toLocaleString('ko-KR')}P까지 선택해주세요.`);
       await render();
       return;
     }
+
+    const requestedWon = (requested / POINTS_PER_UNIT) * WON_PER_UNIT;
 
     // A coupon existing in Firestore IS the pending state — markCouponUsed
     // (store.js) deletes it on redemption instead of flipping a status.
@@ -328,13 +354,13 @@ async function main(authUser) {
       uid: authUser.uid,
       email: profile.email,
       nickname: profile.nickname,
-      points: summary.pointsUsedIfConverted,
-      won: summary.convertibleWon,
+      points: requested,
+      won: requestedWon,
       issuedAt: Date.now(),
     };
     await addCoupon(coupon);
 
-    profile.convertedPoints = (profile.convertedPoints || 0) + summary.pointsUsedIfConverted;
+    profile.convertedPoints = (profile.convertedPoints || 0) + requested;
     await updateUserProfile(authUser.uid, { convertedPoints: profile.convertedPoints });
 
     showToast(`쿠폰 발행! 코드: ${coupon.code}`);
