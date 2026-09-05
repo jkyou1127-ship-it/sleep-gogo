@@ -62,15 +62,15 @@ async function main(authUser) {
     toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2600);
   }
 
+  // Coupons in Firestore are always pending — a used one is deleted (see
+  // markCouponUsed in store.js), so this list never needs a "used" state.
   async function renderCoupons() {
     const coupons = await getAllCoupons();
-    const pending = coupons.filter((c) => c.status === 'unused').reduce((s, c) => s + c.won, 0);
-    const settled = coupons.filter((c) => c.status === 'used').reduce((s, c) => s + c.won, 0);
+    const pending = coupons.reduce((s, c) => s + c.won, 0);
     els.pendingWon.textContent = won(pending);
-    els.settledWon.textContent = won(settled);
 
     if (!coupons.length) {
-      els.couponsBody.innerHTML = `<div class="empty-box">발행된 쿠폰이 없다.</div>`;
+      els.couponsBody.innerHTML = `<div class="empty-box">대기 중인 쿠폰이 없다.</div>`;
       return;
     }
     els.couponsBody.innerHTML = `
@@ -81,11 +81,7 @@ async function main(authUser) {
           <div class="record-row">
             <span class="r-date" style="width:auto">${c.code}</span>
             <span class="r-times">${c.nickname} · ${won(c.won)}</span>
-            ${
-              c.status === 'used'
-                ? `<span class="r-points muted">사용됨</span>`
-                : `<button type="button" class="btn-mini" data-redeem="${c.code}">사용 처리</button>`
-            }
+            <button type="button" class="btn-mini" data-redeem="${c.code}">사용 처리</button>
           </div>`
           )
           .join('')}
@@ -99,6 +95,7 @@ async function main(authUser) {
   async function renderUsers() {
     const users = await getAllUserProfiles();
     els.userCount.textContent = users.length;
+    els.settledWon.textContent = won(users.reduce((s, u) => s + (u.settledWon || 0), 0));
 
     const rows = await Promise.all(
       users.map(async (u) => {
@@ -114,7 +111,7 @@ async function main(authUser) {
       <div class="admin-user-row">
         <div class="admin-user-info">
           <strong>${u.nickname}</strong> <span class="muted">${u.email}</span><br />
-          <span class="muted">기록 ${u.recordCount}일 · 보유 ${u.totalPoints}P · 전환됨 ${u.convertedPoints || 0}P · 조정 ${u.adminAdjustment || 0}P</span>
+          <span class="muted">기록 ${u.recordCount}일 · 보유 ${u.totalPoints}P · 전환됨 ${u.convertedPoints || 0}P · 조정 ${u.adminAdjustment || 0}P · 정산완료 ${won(u.settledWon || 0)}</span>
         </div>
         <div class="admin-user-actions">
           <input type="number" class="mini-input" placeholder="포인트" data-amount="${u.uid}" />
@@ -167,19 +164,15 @@ async function main(authUser) {
     const coupon = await findCouponByCode(code);
     if (!coupon) {
       els.redeemResult.classList.add('error');
-      els.redeemResult.textContent = '존재하지 않는 코드예요.';
+      els.redeemResult.textContent = '존재하지 않는 코드예요 (이미 사용 처리됐거나 잘못된 코드).';
       return;
     }
-    if (coupon.status === 'used') {
-      els.redeemResult.classList.add('error');
-      els.redeemResult.textContent = `이미 사용된 쿠폰이에요. (${coupon.nickname} · ${won(coupon.won)})`;
-      return;
-    }
-    await markCouponUsed(code, profile.email);
+    await markCouponUsed(coupon);
     els.redeemResult.classList.remove('error');
     els.redeemResult.textContent = `${coupon.nickname}님의 ${won(coupon.won)} 쿠폰을 사용 처리했어요!`;
     showToast('사용 처리 완료!');
     await renderCoupons();
+    await renderUsers();
   }
 
   els.redeemForm.addEventListener('submit', async (e) => {

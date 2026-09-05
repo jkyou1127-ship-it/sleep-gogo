@@ -157,8 +157,10 @@ async function main(authUser) {
     const wallet = convertibleSummary(totalPoints, profile.convertedPoints || 0);
     const recent = records.slice(-14).reverse();
 
-    const pendingWon = coupons.filter((c) => c.status === 'unused').reduce((s, c) => s + c.won, 0);
-    const settledWon = coupons.filter((c) => c.status === 'used').reduce((s, c) => s + c.won, 0);
+    // Coupons in Firestore are always pending — a used one is deleted and
+    // its amount is folded into profile.settledWon (see store.js).
+    const pendingWon = coupons.reduce((s, c) => s + c.won, 0);
+    const settledWon = profile.settledWon || 0;
 
     els.greeting.textContent = `안녕하세요, ${profile.nickname}님`;
     els.headerDate.textContent = formatHeaderDate(todayStr);
@@ -244,8 +246,10 @@ async function main(authUser) {
         </div>`;
     }
 
+    // Only ever pending coupons show up here — a used one is deleted by
+    // the admin's "사용 처리" action (see store.js markCouponUsed).
     if (!coupons.length) {
-      els.couponsBody.innerHTML = `<div class="empty-box">발행된 쿠폰이 없다.<br />포인트를 모아 전환해보자.</div>`;
+      els.couponsBody.innerHTML = `<div class="empty-box">대기 중인 쿠폰이 없다.<br />포인트를 모아 전환해보자.</div>`;
     } else {
       els.couponsBody.innerHTML = `
         <div class="record-list">
@@ -257,7 +261,7 @@ async function main(authUser) {
                 <button type="button" class="btn-link" onclick="window.__sqCopy('${c.code}')">${c.code}</button>
               </span>
               <span class="r-times">${won(c.won)}</span>
-              <span class="r-points ${c.status === 'used' ? 'muted' : ''}">${c.status === 'used' ? '사용됨' : '미사용'}</span>
+              <span class="r-points">미사용</span>
             </div>`
             )
             .join('')}
@@ -317,6 +321,8 @@ async function main(authUser) {
       return;
     }
 
+    // A coupon existing in Firestore IS the pending state — markCouponUsed
+    // (store.js) deletes it on redemption instead of flipping a status.
     const coupon = {
       code: randomCouponCode(),
       uid: authUser.uid,
@@ -324,10 +330,7 @@ async function main(authUser) {
       nickname: profile.nickname,
       points: summary.pointsUsedIfConverted,
       won: summary.convertibleWon,
-      status: 'unused',
       issuedAt: Date.now(),
-      usedAt: null,
-      usedBy: null,
     };
     await addCoupon(coupon);
 

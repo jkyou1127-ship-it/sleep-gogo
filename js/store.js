@@ -13,6 +13,7 @@ import {
   query,
   where,
   serverTimestamp,
+  increment,
 } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 import { db } from './firebase.js';
 
@@ -23,6 +24,7 @@ export async function createUserProfile(uid, { email, nickname }) {
     nickname,
     convertedPoints: 0,
     adminAdjustment: 0,
+    settledWon: 0,
     createdAt: serverTimestamp(),
   };
   await setDoc(ref, profile);
@@ -80,10 +82,10 @@ export async function findCouponByCode(code) {
   return snap.exists() ? snap.data() : null;
 }
 
-export async function markCouponUsed(code, usedByEmail) {
-  await updateDoc(doc(db, 'coupons', code), {
-    status: 'used',
-    usedAt: Date.now(),
-    usedBy: usedByEmail,
-  });
+// Marking a coupon used settles it immediately: the owner's running
+// settledWon total goes up and the coupon is deleted (used coupons don't
+// stick around — a coupon in the collection always means "still pending").
+export async function markCouponUsed(coupon) {
+  await updateUserProfile(coupon.uid, { settledWon: increment(coupon.won) });
+  await deleteDoc(doc(db, 'coupons', coupon.code));
 }
